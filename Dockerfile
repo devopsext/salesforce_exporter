@@ -31,4 +31,4 @@ USER salesforce
 
 EXPOSE 9141
 
-CMD [ "/use/local/salesforce_exporter" ]
+CMD [ "/usr/local/salesforce_exporter" ]

@@ -31,12 +31,19 @@ var (
 	casesOpened = prometheus.NewDesc(
 		prometheus.BuildFQName(namespace, "", "cases_opened"),
 		"How many cases have been opened (per type).",
-		[]string{"type", "origin"}, nil,
+		[]string{
+			"sf_case_type",
+			"sf_case_origin",
+			"sf_case_issue",
+			"sf_case_country",
+		},
+		nil,
 	)
 	casesTotal = prometheus.NewDesc(
 		prometheus.BuildFQName(namespace, "", "cases_total"),
 		"Total amount of cases.",
-		nil, nil,
+		nil,
+		nil,
 	)
 )
 
@@ -62,25 +69,62 @@ func (e *Exporter) Describe(ch chan<- *prometheus.Desc) {
 func (e *Exporter) Collect(ch chan<- prometheus.Metric) {
 	log.Info("Start scraping...")
 
-	sfClient := salesforce.CreateClient(e.sfURL, e.sfUser, e.sfPassword, e.sfToken)
+	sfClient, err := salesforce.CreateClient(
+		e.sfURL,
+		e.sfUser,
+		e.sfPassword,
+		e.sfToken,
+	)
 
-	openedCases := salesforce.QueryOpenedCases(sfClient)
+	if err != nil {
+		ch <- prometheus.MustNewConstMetric(
+			up, prometheus.GaugeValue, 0,
+		)
+		log.Error(err)
+		return
+	}
+
+	openedCases, err := salesforce.QueryOpenedCases(sfClient)
+
+	if err != nil {
+		ch <- prometheus.MustNewConstMetric(
+			up, prometheus.GaugeValue, 0,
+		)
+		log.Error(err)
+		return
+	}
+
+	totalCases, err := salesforce.QueryTotalCases(sfClient)
+
+	if err != nil {
+		ch <- prometheus.MustNewConstMetric(
+			up, prometheus.GaugeValue, 0,
+		)
+		log.Error(err)
+		return
+	}
+
 	for key, value := range openedCases {
 		ch <- prometheus.MustNewConstMetric(
-			casesOpened, prometheus.GaugeValue, value, key.CaseType, key.CaseOrigin,
+			casesOpened,
+			prometheus.GaugeValue,
+			value,
+			key.CaseType,
+			key.CaseOrigin,
+			key.CaseIssue,
+			key.CaseCountry,
 		)
 	}
 
-	totalCases := salesforce.QueryTotalCases(sfClient)
 	ch <- prometheus.MustNewConstMetric(
 		casesTotal, prometheus.CounterValue, totalCases,
 	)
 
-	log.Info("Scraping has successfully finished")
-
 	ch <- prometheus.MustNewConstMetric(
 		up, prometheus.GaugeValue, 1,
 	)
+
+	log.Info("Scraping has successfully finished")
 
 }
 
@@ -93,12 +137,42 @@ func LookupEnvOrString(key string, defaultVal string) string {
 
 func main() {
 
-	flag.StringVar(&listenAddress, "web.listen-address", LookupEnvOrString("SFE_LISTEN_ADDRESS", listenAddress), "Address to listen on for telemetry")
-	flag.StringVar(&metricsPath, "web.telemetry-path", LookupEnvOrString("SFE_METRICS_PATH", metricsPath), "Path under which to expose metrics")
-	flag.StringVar(&sfURL, "salesforce.url", LookupEnvOrString("SFE_SF_URL", sfURL), "Salesforce login URL")
-	flag.StringVar(&sfUser, "salesforce.user", LookupEnvOrString("SRE_SF_USER", sfUser), "User for interation with Salesforce")
-	flag.StringVar(&sfPassword, "salesforce.password", LookupEnvOrString("SRE_SF_PASSWORD", sfPassword), "User's password")
-	flag.StringVar(&sfToken, "salesforce.token", LookupEnvOrString("SRE_SF_TOKEN", sfToken), "User's token")
+	flag.StringVar(
+		&listenAddress,
+		"web.listen-address",
+		LookupEnvOrString("SFE_LISTEN_ADDRESS", listenAddress),
+		"Address to listen on for telemetry",
+	)
+	flag.StringVar(
+		&metricsPath,
+		"web.telemetry-path",
+		LookupEnvOrString("SFE_METRICS_PATH", metricsPath),
+		"Path under which to expose metrics",
+	)
+	flag.StringVar(
+		&sfURL,
+		"salesforce.url",
+		LookupEnvOrString("SFE_SF_URL", sfURL),
+		"Salesforce login URL",
+	)
+	flag.StringVar(
+		&sfUser,
+		"salesforce.user",
+		LookupEnvOrString("SFE_SF_USER", sfUser),
+		"User for interation with Salesforce",
+	)
+	flag.StringVar(
+		&sfPassword,
+		"salesforce.password",
+		LookupEnvOrString("SFE_SF_PASSWORD", sfPassword),
+		"User's password",
+	)
+	flag.StringVar(
+		&sfToken,
+		"salesforce.token",
+		LookupEnvOrString("SFE_SF_TOKEN", sfToken),
+		"User's token",
+	)
 
 	flag.Parse()
 	log.SetFormatter(&log.JSONFormatter{})

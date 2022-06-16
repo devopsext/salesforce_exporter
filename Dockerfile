@@ -1,7 +1,5 @@
 FROM golang:1.18.2-alpine3.15 AS build_base
 
-ARG XPATE_GROUP_CI_TOKEN=abc
-
 ENV GO_WORKDIR $GOPATH/prometheus/salesforce_exporter
 
 # Set working directory

@@ -24,6 +24,7 @@ var CaseType string
 var CaseIssue string
 var CaseCountry string
 
+// CreateClient
 // Connect to SF
 func CreateClient(URL, User, Password, Token string) (*simpleforce.Client, error) {
 
@@ -44,6 +45,7 @@ func CreateClient(URL, User, Password, Token string) (*simpleforce.Client, error
 	return client, nil
 }
 
+// QueryOpenedCases
 // Query only opened cases for last minBefore (5 min by default). Sum by type and origin
 func QueryOpenedCases(client *simpleforce.Client) (map[Case]float64, error) {
 	var cases []Case
@@ -106,7 +108,7 @@ func QueryOpenedCases(client *simpleforce.Client) (map[Case]float64, error) {
 			CaseIssue:   value.CaseIssue,
 			CaseCountry: value.CaseCountry,
 		}
-		casesMap[cs] += 1
+		casesMap[cs]++
 	}
 
 	return casesMap, nil

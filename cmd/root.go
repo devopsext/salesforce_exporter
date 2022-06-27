@@ -1,13 +1,14 @@
 package cmd
 
 import (
+	"net/http"
+	"os"
+	"salesforce_exporter/pkg/exporter"
+
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
-	"net/http"
-	"os"
-	"salesforce_exporter/pkg/exporter"
 )
 
 var (

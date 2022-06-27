@@ -2,9 +2,10 @@ package exporter
 
 import (
 	"errors"
+	"salesforce_exporter/pkg/salesforce"
+
 	"github.com/prometheus/client_golang/prometheus"
 	log "github.com/sirupsen/logrus"
-	"salesforce_exporter/pkg/salesforce"
 )
 
 const namespace = "salesforce"
@@ -96,16 +97,25 @@ func (e *Exporter) Collect(ch chan<- prometheus.Metric) {
 		return
 	}
 
-	for key, value := range openedCases {
+	// Set gauge to 0 by default if there are no opened cases
+	if len(openedCases) == 0 {
 		ch <- prometheus.MustNewConstMetric(
 			casesOpened,
 			prometheus.GaugeValue,
-			value,
-			key.CaseType,
-			key.CaseOrigin,
-			key.CaseIssue,
-			key.CaseCountry,
+			0,
 		)
+	} else {
+		for key, value := range openedCases {
+			ch <- prometheus.MustNewConstMetric(
+				casesOpened,
+				prometheus.GaugeValue,
+				value,
+				key.CaseType,
+				key.CaseOrigin,
+				key.CaseIssue,
+				key.CaseCountry,
+			)
+		}
 	}
 
 	ch <- prometheus.MustNewConstMetric(

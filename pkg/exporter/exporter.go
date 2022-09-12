@@ -103,6 +103,10 @@ func (e *Exporter) Collect(ch chan<- prometheus.Metric) {
 			casesOpened,
 			prometheus.GaugeValue,
 			0,
+			"",
+			"",
+			"",
+			"",
 		)
 	} else {
 		for key, value := range openedCases {

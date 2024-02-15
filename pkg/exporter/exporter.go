@@ -37,7 +37,7 @@ var (
 	)
 	pendingsTotal = prometheus.NewDesc(
 		prometheus.BuildFQName(namespace, "", "pendings_total"),
-		"Total pending chat requests.",
+		"Routed requests awaiting agent.",
 		nil,
 		nil,
 	)

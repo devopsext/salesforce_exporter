@@ -35,6 +35,12 @@ var (
 		nil,
 		nil,
 	)
+	pendingsTotal = prometheus.NewDesc(
+		prometheus.BuildFQName(namespace, "", "pendings_total"),
+		"Routed requests awaiting agent.",
+		nil,
+		nil,
+	)
 )
 
 type Exporter struct {
@@ -57,6 +63,7 @@ func (e *Exporter) Describe(ch chan<- *prometheus.Desc) {
 	ch <- up
 	ch <- casesOpened
 	ch <- casesTotal
+	ch <- pendingsTotal
 }
 
 func (e *Exporter) Collect(ch chan<- prometheus.Metric) {
@@ -78,6 +85,16 @@ func (e *Exporter) Collect(ch chan<- prometheus.Metric) {
 	}
 
 	openedCases, err := salesforce.QueryOpenedCases(sfClient)
+
+	if err != nil {
+		ch <- prometheus.MustNewConstMetric(
+			up, prometheus.GaugeValue, 0,
+		)
+		log.Error(err)
+		return
+	}
+
+	pendingChats, err := salesforce.QueryPendingChats(sfClient)
 
 	if err != nil {
 		ch <- prometheus.MustNewConstMetric(
@@ -124,6 +141,10 @@ func (e *Exporter) Collect(ch chan<- prometheus.Metric) {
 
 	ch <- prometheus.MustNewConstMetric(
 		casesTotal, prometheus.CounterValue, totalCases,
+	)
+	
+	ch <- prometheus.MustNewConstMetric(
+		pendingsTotal, prometheus.GaugeValue, pendingChats,
 	)
 
 	ch <- prometheus.MustNewConstMetric(

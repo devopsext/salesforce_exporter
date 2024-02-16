@@ -12,6 +12,7 @@ const minBefore = 5
 
 const openedCasesQuery = "SELECT Case_Issue_Primary__c, Account_Country__c, Type, RecordType.Name FROM Case WHERE IsClosed = false AND CreatedDate >"
 const totalCasesQuery = "SELECT COUNT() FROM Case WHERE CreatedDate = TODAY"
+const pendingChatsQuery = "SELECT COUNT() FROM PendingServiceRouting WHERE IsPushed = FALSE AND IsReadyForRouting = TRUE AND CreatedDate >"
 
 type Case struct {
 	CaseType    string
@@ -116,6 +117,17 @@ func QueryOpenedCases(client *simpleforce.Client) (map[Case]float64, error) {
 
 func QueryTotalCases(client *simpleforce.Client) (float64, error) {
 	result, err := client.Query(totalCasesQuery)
+	if err != nil {
+		return 0, err
+	}
+
+	return float64(result.TotalSize), nil
+}
+
+func QueryPendingChats(client *simpleforce.Client) (float64, error) {
+	now := time.Now().UTC()
+	timeBefore := now.Add(time.Duration(-minBefore) * time.Minute).Format(time.RFC3339)
+	result, err := client.Query(pendingChatsQuery + timeBefore)
 	if err != nil {
 		return 0, err
 	}
